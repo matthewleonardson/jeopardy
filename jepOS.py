@@ -3,7 +3,7 @@ import random
 import re
 import csv
 
-directory = "pregame/singles"
+directory = "singles"
 round = 'jeopardy'
 files = random.choices(os.listdir(directory), k=10)
 selection_string = ""
@@ -33,7 +33,7 @@ dd3 = generate_dd_location()
 while (dd3 == dd2):
     dd3 = generate_dd_location()
 
-csv_file = open('game.csv', 'w')
+csv_file = open('game.csv', 'w', newline='', encoding='utf-8')
 writer = csv.writer(csv_file)
 
 def clear(s):
@@ -56,32 +56,36 @@ def generate_selection_string():
 def push_thing():
     if round != 'final':        
         for category in range(0, 6):
-            with open(directory + '/' + chosen_categories[category], 'r', encoding='utf-8') as cat:
+            with open(directory + '/' + chosen_categories[category], 'r', encoding='utf-8', newline='') as cat:
                 lines = cat.readlines()
                 category_name = " ".join(lines[0].split()[1:])
                 for n in range(0, 5):
 
                     boolean = 'False'
                     if (n, category) == dd1 and round == 'jeopardy':
-                        boolean = 'true'
+                        boolean = 'TRUE'
 
                     if ((n, category) == dd2 or (n, category) == dd3) and round == 'double':
-                        boolean = 'true'
+                        boolean = 'TRUE'
                     
+                    if round == 'double':
+                        is_double = 2
+                    else:
+                        is_double = 1
 
-                    writer.writerow([round, '"{}"'.format(category_name), str(200 * (n + 1)), '"{}"'.format(" ".join(lines[3 + 4 * n].split()[1:])), '"{}"'.format(" ".join(lines[5 + 4 *  n].split()[1:])), boolean, str(category + 1), str(n + 1)])
+                    writer.writerow([round, '"{}"'.format(category_name), str(200 * is_double * (n + 1)), '"{}"'.format(" ".join(lines[3 + 4 * n].split()[1:])), '"{}"'.format(" ".join(lines[5 + 4 *  n].split()[1:])), boolean, "", "", ""])
     else:
-        with open(directory + '/' + chosen_categories[0], 'r') as cat:
+        with open(directory + '/' + chosen_categories[0], 'r', newline='') as cat:
             lines = cat.readlines()
             category_name = " ".join(lines[0].split()[1:])
-            writer.writerow([round, '"{}"'.format(category_name), str(0), '"{}"'.format(" ".join(lines[1].split()[1:])), '"{}"'.format(" ".join(lines[2].split()[1:])), 'False', str(1), str(1)])
+            writer.writerow([round, '"{}"'.format(category_name), str(0), '"{}"'.format(" ".join(lines[1].split()[1:])), '"{}"'.format(" ".join(lines[2].split()[1:])), 'False', "", "", ""])
 
     for category in chosen_categories:
         if category != "":
             os.renames(directory + "/" + category, directory + "_used/" + category)             
 
 selection_string = generate_selection_string()
-writer.writerow(['round', 'cat', 'val', 'q', 'a', 'dd', 'x', 'y'])
+writer.writerow(['round', 'cat', 'val', 'q', 'a', 'dd', 'type', 'topCaption', 'bottomCaption'])
 
 while(True):
 
@@ -113,16 +117,23 @@ while(True):
 
     elif i.lower() == 'confirm':
         push_thing()
-        if directory == 'pregame/singles':
+        if directory == 'singles':
             round = 'double'
-            directory = 'pregame/doubles'
-        elif directory == 'pregame/doubles':
+            directory = 'doubles'
+        elif directory == 'doubles':
             round = 'final'
-            directory = 'pregame/finals'
+            directory = 'finals'
         else:
             csv_file.close()
-            exec(open("pregame/csv_to_html.py").read())
-            clear("Success\nCompleted game is in final.html")
+
+            with open('game.csv', 'r', encoding='utf-8') as finished_file:
+                filedata = finished_file.read()
+
+            filedata.replace('"""', '"')
+
+            with open('game.csv', 'w', encoding='utf-8') as finished_file:
+                finished_file.write(filedata)
+
             exit(0)
         chosen_categories = ["", "", "", "", "", "", "", "", "", ""]
         chosen_index = 0
